@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="3.2.2">
+ <framework name="qpcpp"/>
+ <package name="ActiveObjects" stereotype="0x02">
+  <class name="BatteryController" superclass="qpcpp::QMActive">
+   <attribute name="chargedValue" type="const uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="dischargedValue" type="const uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="currentValue" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <operation name="BatteryController" type="QMActive(Q_STATE_CAST(&amp;BatteryController::initial)), chargedValue(4250), dischargedValue(3520) " visibility="0x02" properties="0x00"/>
+   <operation name="~BatteryController" type="" visibility="0x00" properties="0x00">
+    <code>/* no! */</code>
+   </operation>
+   <operation name="getValue" type="uint32_t&amp;" visibility="0x00" properties="0x00">
+    <code>return currentValue;</code>
+   </operation>
+   <operation name="getPercentage" type="uint32_t" visibility="0x00" properties="0x00">
+    <code>const uint32_t fullRange = chargedValue - dischargedValue;
+uint32_t percentage = 100*currentValue/fullRange;
+//printf(&quot;Current value is [%d %]\n&quot;, percentage);
+return percentage;</code>
+   </operation>
+   <operation name="getInstance" type="BatteryController&amp;" visibility="0x00" properties="0x01">
+    <code>static BatteryController instance;
+return instance;</code>
+   </operation>
+   <statechart>
+    <initial target="../1/1">
+     <action>/* supress warnging */
+DT::item.trace(&quot;Initial transition of battery controller&quot;);
+(void)e;</action>
+     <initial_glyph conn="4,4,5,0,38,13">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="commonState">
+     <entry brief="Enable ADC">/* BSP_ADC_StartVoltageMonitor() */
+DT::item.trace(&quot;commonState Entry!&quot;);</entry>
+     <exit brief="Disable ADC">/* BSP_ADC_StopVoltageMonitor() */
+DT::item.trace(&quot;commonState Exit!&quot;);</exit>
+     <tran trig="NEW_BATTERY_VALUE">
+      <action>DT::item.trace(&quot;NEW_BATTERY_VALUE&quot;);</action>
+      <tran_glyph conn="11,62,3,-1,18">
+       <action box="0,-2,17,2"/>
+      </tran_glyph>
+     </tran>
+     <state name="IdleState">
+      <entry>DT::item.trace(&quot;IdleState Entry!&quot;);</entry>
+      <exit>DT::item.trace(&quot;IdleState Exit!&quot;);</exit>
+      <tran trig="LOW_BATTERY" target="../../2">
+       <action>DT::item.trace(&quot;LOW_BATTERY_SIG&quot;);</action>
+       <tran_glyph conn="66,23,1,3,14">
+        <action box="0,-2,12,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="19,17,47,36">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state name="lowBatteryState">
+      <entry>DT::item.trace(&quot;lowBatteryState Entry!&quot;);</entry>
+      <exit>DT::item.trace(&quot;lowBatteryState Exit!&quot;);</exit>
+      <tran trig="FULL_BATTERY" target="../../1">
+       <action>DT::item.trace(&quot;FULL_BATTERY&quot;);</action>
+       <tran_glyph conn="80,43,3,1,-14">
+        <action box="-11,-2,10,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="80,17,47,36">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="11,6,128,62">
+      <entry box="1,2,12,2"/>
+      <exit box="1,4,12,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="150,108"/>
+   </statechart>
+  </class>
+  <directory name=".">
+   <file name="BatteryController.h">
+    <text>#ifndef BATTERYCONTROLLER_H
+#define BATTERYCONTROLLER_H
+
+#include &quot;qp_port.h&quot;
+
+namespace BC {
+
+enum BatterySignals {
+    LOW_BATTERY_SIG = QP::Q_USER_SIG,
+    FULL_BATTERY_SIG,
+    NEW_BATTERY_VALUE_SIG,
+    MAX_PUB_SIG
+};
+
+$declare(ActiveObjects::BatteryController)
+
+extern BatteryController&amp; item;
+
+}
+
+#endif // BATTERYCONTROLLER_H</text>
+   </file>
+   <file name="BatteryController.cpp">
+    <text>#include &quot;qp_port.h&quot;
+#include &quot;BatteryController.h&quot;
+#include &lt;stdint.h&gt;
+#include &quot;BoardSupportPackage.h&quot;
+#include &quot;DebugTracer.h&quot;
+namespace BC {
+
+$define(ActiveObjects::BatteryController)
+
+BatteryController&amp; item = BatteryController::getInstance();
+
+}
+</text>
+   </file>
+  </directory>
+ </package>
+</model>

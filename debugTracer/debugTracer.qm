@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="3.2.2">
+ <framework name="qpcpp"/>
+ <package name="Tracer" stereotype="0x00">
+  <class name="DebugTracer" superclass="qpcpp::QMActive">
+   <attribute name="tracer" type="TraceChannelController" visibility="0x02" properties="0x00"/>
+   <attribute name="traceStringSize" type="const uint32_t" visibility="0x02" properties="0x00"/>
+   <operation name="DebugTracer" type="QMActive(Q_STATE_CAST(&amp;DebugTracer::initial)), tracer(*this), traceStringSize(512) " visibility="0x02" properties="0x00">
+    <code>tracer.init();</code>
+   </operation>
+   <operation name="~DebugTracer" type="" visibility="0x00" properties="0x00">
+    <code>//</code>
+   </operation>
+   <operation name="getInstance" type="DebugTracer&amp;" visibility="0x00" properties="0x01">
+    <code>static DebugTracer instance;
+return instance;</code>
+   </operation>
+   <operation name="trace" type="void" visibility="0x00" properties="0x00">
+    <parameter name="fmt" type="const char *__restrict"/>
+    <parameter name="" type="..."/>
+    <code>QP::DataEvt *evt = Q_NEW(QP::DataEvt, TRACE_SIG);
+int writeSize = 0;
+evt-&gt;string = new char[traceStringSize];
+if (!evt-&gt;string) {
+    static const char *const memoryError = &quot;Cannot allocate data. Dropping trace.&quot;;
+    evt-&gt;string = const_cast&lt;char*&gt;(memoryError);
+    writeSize = strlen(memoryError);
+} else {
+    va_list args;
+    va_start (args, fmt);
+    writeSize = vsnprintf (evt-&gt;string, traceStringSize-3, fmt, args);
+    va_end (args);
+}
+evt-&gt;string[writeSize++] = '\n';
+evt-&gt;string[writeSize++] = '\r';
+evt-&gt;string[writeSize++] = '\0';
+post_( evt, 0);</code>
+   </operation>
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="15,5,5,0,12,7">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="ActiveState">
+     <tran trig="TRACE">
+      <action>QP::DataEvt *evt = static_cast&lt;QP::DataEvt *&gt;(const_cast&lt;QP::QEvt*&gt;(e));
+evt-&gt;sig = UC::SEND_NEW_SIG;
+    BSP::system.setLedState(BSP::RED_LED, true);
+me-&gt;tracer.dispatch(e);</action>
+      <tran_glyph conn="19,18,3,-1,12">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="CHAR">
+      <action>QP::DataEvt *evt = static_cast&lt;QP::DataEvt *&gt;(const_cast&lt;QP::QEvt*&gt;(e));
+evt-&gt;sig = UC::RECV_NEW_SIG;
+me-&gt;tracer.dispatch(e);</action>
+      <tran_glyph conn="19,24,3,-1,12">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="NEW_BUFFERED_STRING">
+      <action>const QP::DataEvt *const recieved = static_cast&lt;const QP::DataEvt*const&gt;(e);
+/* work with it */
+me-&gt;trace(&quot;[%s]&quot;, recieved-&gt;string);
+free(recieved-&gt;ptr);</action>
+      <tran_glyph conn="66,34,1,-1,-18">
+       <action box="-18,-2,19,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="TRANSMITION_COMPLETE">
+      <action>QP::DataEvt *evt = static_cast&lt;QP::DataEvt *&gt;(const_cast&lt;QP::QEvt*&gt;(e));
+evt-&gt;sig = UC::SEND_SUCESSFULL_SIG;
+    BSP::system.setLedState(BSP::RED_LED, false);
+me-&gt;tracer.dispatch(e);</action>
+      <tran_glyph conn="66,26,1,-1,-20">
+       <action box="-18,-2,19,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="19,12,47,31"/>
+    </state>
+    <state_diagram size="120,74"/>
+   </statechart>
+  </class>
+  <directory name=".">
+   <file name="DebugTracer.h">
+    <text>#ifndef DEBUGTRACER_H
+#define DEBUGTRACER_H
+
+#include &quot;qp_port.h&quot;
+#include &quot;list.h&quot;
+#include &quot;UartController.h&quot;
+
+namespace DT {
+
+enum DebugSignals {
+    TRACE_SIG = QP::Q_USER_SIG,
+    NEW_BUFFERED_STRING_SIG,
+    CHAR_SIG,
+    TRANSMITION_COMPLETE_SIG,
+    MAX_PUB_SIG
+};
+
+class TraceChannelController : public UC::UartController {
+public:
+    TraceChannelController(QP::QMActive&amp; own) : UC::UartController(own) {};
+    virtual ~TraceChannelController() {};
+    virtual void onReception(const char&amp; character);
+private:
+    virtual bool sendData(const char * buff);
+};
+
+$declare(Tracer::DebugTracer)
+
+extern DebugTracer&amp; item;
+
+}
+
+#endif // DEBUGTRACER_H</text>
+   </file>
+   <file name="DebugTracer.cpp">
+    <text>
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdarg.h&gt;
+#include &lt;string.h&gt;
+#include &quot;DebugTracer.h&quot;
+#include &quot;BoardSupportPackage.h&quot;
+#include &quot;UartController.h&quot;
+#include &quot;myEvents.h&quot;
+
+namespace DT {
+
+$define(Tracer::DebugTracer)
+
+void TraceChannelController::onReception(const char&amp; character) {
+}
+
+bool TraceChannelController::sendData(const char * buff) {
+    return BSP::system.debugTraceAsync(buff) != 0;
+}
+
+DebugTracer&amp; item = DebugTracer::getInstance();
+
+}</text>
+   </file>
+  </directory>
+ </package>
+</model>
