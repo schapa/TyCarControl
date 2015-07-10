@@ -7,7 +7,8 @@
    <attribute name="input" type="List &lt;char&gt;" visibility="0x02" properties="0x00"/>
    <attribute name="owner" type="QP::QMActive&amp;" visibility="0x02" properties="0x00"/>
    <attribute name="isInDebugMode" type="bool" visibility="0x02" properties="0x00"/>
-   <operation name="UartController" type="QMsm(Q_STATE_CAST(&amp;UartController::initial)), owner(own), isInDebugMode(false)" visibility="0x00" properties="0x00">
+   <attribute name="speed" type="UartSpeed" visibility="0x02" properties="0x00"/>
+   <operation name="UartController" type="QMsm(Q_STATE_CAST(&amp;UartController::initial)), owner(own), isInDebugMode(false), speed(SPEED_115200)" visibility="0x00" properties="0x00">
     <parameter name="own" type="QP::QMActive&amp;"/>
     <code>//</code>
    </operation>
@@ -35,6 +36,15 @@
     <parameter name="state" type="bool"/>
     <code>isInDebugMode = state;</code>
    </operation>
+   <operation name="getSpeed" type="UartSpeed&amp;" visibility="0x00" properties="0x00">
+    <code>return speed;</code>
+   </operation>
+   <operation name="setSpeed" type="void" visibility="0x00" properties="0x00">
+    <parameter name="speed" type="UartSpeed"/>
+    <code>this-&gt;speed = speed;
+reconfigure();</code>
+   </operation>
+   <operation name="reconfigure" type="void" visibility="0x02" properties="0x14"/>
    <statechart>
     <initial target="../1/3">
      <action>(void)e; // supress warning
@@ -154,6 +164,11 @@ enum UartSignals {
     IDLE_DETECTED_SIG,
     SEND_SUCESSFULL_SIG,
     MAX_PUB_SIG
+};
+
+enum UartSpeed {
+    SPEED_9600,
+    SPEED_115200
 };
 
 $declare(Controller::UartController)

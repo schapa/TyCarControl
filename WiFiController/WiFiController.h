@@ -15,4 +15,36 @@
 // for more details.
 //****************************************************************************
 //${Controller::.::WiFiController.h} .........................................
+#ifndef WIFICONTROLLER_H
+#define WIFICONTROLLER_H
 
+#include "qp_port.h"
+
+namespace WiFi {
+
+enum BatterySignals {
+    DUMMY_SIG = QP::Q_USER_SIG,
+    MAX_PUB_SIG
+};
+
+//${Controller::WiFiController} ..............................................
+class WiFiController : public QP::QMActive {
+private:
+    WiFiController();
+
+public:
+    virtual ~WiFiController();
+    static WiFiController& getInstance();
+
+protected:
+    static QP::QState initial(WiFiController * const me, QP::QEvt const * const e);
+    static QP::QState state1  (WiFiController * const me, QP::QEvt const * const e);
+    static QP::QMState const state1_s;
+};
+
+
+extern WiFiController& item;
+
+}
+
+#endif // WIFICONTROLLER_H

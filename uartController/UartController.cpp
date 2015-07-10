@@ -34,7 +34,8 @@ static const char carretReturn = '\r';
 UartController::UartController(QP::QMActive& own)
   : QMsm(Q_STATE_CAST(&UartController::initial)),
     owner(own),
-    isInDebugMode(false){
+    isInDebugMode(false),
+    speed(SPEED_115200){
     //
 }
 
@@ -57,6 +58,16 @@ void UartController::debugTrace(const char *__restrict fmt, ... ) {
 void UartController::setDebugMode(bool state) {
     isInDebugMode = state;
 }
+//${Controller::UartController::getSpeed} ....................................
+UartSpeed& UartController::getSpeed() {
+    return speed;
+}
+//${Controller::UartController::setSpeed} ....................................
+void UartController::setSpeed(UartSpeed speed) {
+    this->speed = speed;
+    reconfigure();
+}
+
 //${Controller::UartController::SM} ..........................................
 QP::QState UartController::initial(UartController * const me, QP::QEvt const * const e) {
     static struct {

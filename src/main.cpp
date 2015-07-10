@@ -25,14 +25,10 @@ int main (int argc, char* argv[]) {
 	QP::initializeFramework();
 
 	/* the whole queue for events */
-    static QP::QEvt const *queueSto[1200];
+    static QP::QEvt const *queueSto[200];
 
 	DT::item.start(prio++, queueSto, Q_DIM(queueSto), (void *)0, 0);
 	BC::item.start(prio++, queueSto, Q_DIM(queueSto), (void *)0, 0);
-
-	BC::item.post_( Q_NEW(QP::QEvt, BC::FULL_BATTERY_SIG), 0);
-	BC::item.post_( Q_NEW(QP::QEvt, BC::FULL_BATTERY_SIG), 0);
-	BC::item.post_( Q_NEW(QP::QEvt, BC::FULL_BATTERY_SIG), 0);
 
 	return QP::QF::run();
 }

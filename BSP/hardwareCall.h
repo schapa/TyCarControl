@@ -15,10 +15,12 @@ void initLedGpio();
 void initDebugGpio(void);
 void initWiFiGpio(void);
 
+void initSteeringPWMGpio(void);
+
 void setGreenLedState(bool);
 void setRedLedState(bool);
 
-HAL_StatusTypeDef initDebugIface(UART_HandleTypeDef &huart);
+HAL_StatusTypeDef initUartIface(UART_HandleTypeDef &huart);
 HAL_StatusTypeDef initWiFiIface(UART_HandleTypeDef &huart);
 
 void allowInterrupts(void);

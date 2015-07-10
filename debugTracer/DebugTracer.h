@@ -39,6 +39,7 @@ public:
     virtual void onReception(const char& character);
 private:
     virtual bool sendData(const char * buff);
+    virtual void reconfigure();
 };
 
 //${Tracer::DebugTracer} .....................................................

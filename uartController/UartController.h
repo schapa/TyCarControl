@@ -31,6 +31,11 @@ enum UartSignals {
     MAX_PUB_SIG
 };
 
+enum UartSpeed {
+    SPEED_9600,
+    SPEED_115200
+};
+
 //${Controller::UartController} ..............................................
 class UartController : public QP::QMsm {
 private:
@@ -38,6 +43,7 @@ private:
     List <char> input;
     QP::QMActive& owner;
     bool isInDebugMode;
+    UartSpeed speed;
 
 public:
     UartController(QP::QMActive& own);
@@ -54,6 +60,11 @@ private:
 
 public:
     void setDebugMode(bool state);
+    UartSpeed& getSpeed();
+    void setSpeed(UartSpeed speed);
+
+private:
+    virtual void reconfigure() = 0;
 
 protected:
     static QP::QState initial(UartController * const me, QP::QEvt const * const e);

@@ -109,6 +109,7 @@ public:
     virtual void onReception(const char&amp; character);
 private:
     virtual bool sendData(const char * buff);
+    virtual void reconfigure();
 };
 
 $declare(Tracer::DebugTracer)
@@ -140,6 +141,9 @@ void TraceChannelController::onReception(const char&amp; character) {
 
 bool TraceChannelController::sendData(const char * buff) {
     return BSP::system.debugTraceAsync(buff) != 0;
+}
+void TraceChannelController::reconfigure() {
+    BSP::system.setDebugSpeed(getSpeed());
 }
 
 DebugTracer&amp; item = DebugTracer::getInstance();

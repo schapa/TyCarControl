@@ -13,6 +13,11 @@
 #include "DebugTracer.h"
 #include "myEvents.h"
 
+static const uint32_t uartSpeedRate[] = {
+    [UC::SPEED_9600] = 9600,
+    [UC::SPEED_115200] = 115200
+};
+
 namespace BSP {
 
 void BoardSupportPackage::systemInit() {
@@ -67,9 +72,11 @@ BoardSupportPackage::BoardSupportPackage() :
 		systemInitialized(false),
 		debugInitialized(false),
 		wifiUartInitialized(false),
-		printfBufferSize(512) {
+		printfBufferSize(512),
+		debugUartSpeed(uartSpeedRate[UC::SPEED_115200]),
+		wifiUartSpeed(uartSpeedRate[UC::SPEED_9600]){
 	UART_InitTypeDef uartParams = {
-			115200,
+			debugUartSpeed,
 			UART_WORDLENGTH_8B,
 			UART_STOPBITS_1,
 			UART_PARITY_NONE,
@@ -84,20 +91,40 @@ BoardSupportPackage::BoardSupportPackage() :
 			DMA_MINC_ENABLE,
 			DMA_PDATAALIGN_BYTE,//DMA_PDATAALIGN_WORD, //uart->dr == 4 bytes
 			DMA_MDATAALIGN_BYTE,
-			DMA_NORMAL,
-			DMA_PRIORITY_VERY_HIGH,//DMA_PRIORITY_LOW,
+			DMA_PFCTRL,
+			DMA_PRIORITY_LOW,
 			DMA_FIFOMODE_DISABLE,
 			DMA_FIFO_THRESHOLD_1QUARTERFULL, // ignored
 			DMA_MBURST_SINGLE,
 			DMA_PBURST_SINGLE
 	};
-	debugUartTXDMA.Instance = DMA1_Stream1;
+	TIM_Base_InitTypeDef steeringPWMTimInit= {
+			13107,
+			TIM_COUNTERMODE_UP,
+			0xFFFF,
+			TIM_CLOCKDIVISION_DIV1,
+			0
+	};
+	/* configure debug UART */
+	debugUartTXDMA.Instance = DMA1_Stream0;
 	debugUartTXDMA.Init = txDmaParams;
 	debugUartTXDMA.Parent = &debugUart;
-
 	debugUart.Instance = UART8;
 	debugUart.Init = uartParams;
 	debugUart.hdmatx = &debugUartTXDMA;
+
+	/* configure ESP8266 UART */
+	wifiUartTXDMA.Instance = DMA1_Stream1; /* TODO: change this */
+	wifiUartTXDMA.Init = txDmaParams;
+	wifiUartTXDMA.Parent = &wifiUart;
+	uartParams.BaudRate = wifiUartSpeed;
+	wifiUart.Instance = UART7;
+	wifiUart.Init = uartParams;
+	wifiUart.hdmatx = &wifiUartTXDMA;
+
+	steeringPWM.Channel = HAL_TIM_ACTIVE_CHANNEL_1;
+	steeringPWM.Init = steeringPWMTimInit;
+	steeringPWM.Instance = TIM2;
 }
 
 BoardSupportPackage& system = BoardSupportPackage::getIstance();
@@ -105,14 +132,34 @@ BoardSupportPackage& system = BoardSupportPackage::getIstance();
 
 bool BoardSupportPackage::debugInit() {
 	initDebugGpio();
-	debugInitialized = initDebugIface(debugUart) == HAL_OK;
+	debugInitialized = initUartIface(debugUart) == HAL_OK;
 	return debugInitialized;
+}
+
+void BoardSupportPackage::setDebugIFaceSpeed(UC::UartSpeed speed) {
+	debugUart.Init.BaudRate = uartSpeedRate[speed];
+	debugInit();
 }
 
 
 bool BoardSupportPackage::wifiUartInt() {
 	initWiFiGpio();
+	wifiUartInitialized = initUartIface(wifiUart) == HAL_OK;
 	return wifiUartInitialized;
+}
+
+bool BoardSupportPackage::wifiSendAsync(const char *__restrict string) {
+	return wifiUartInitialized ? uartSendDMA(&wifiUart, string, strlen(string)) : false;
+}
+
+void BoardSupportPackage::setWifiIFaceSpeed(UC::UartSpeed speed) {
+	wifiUart.Init.BaudRate = uartSpeedRate[speed];
+	wifiUartInt();
+}
+
+bool BoardSupportPackage::steeringPWMInt() {
+	initSteeringPWMGpio();
+
 }
 
 void BoardSupportPackage::printStartupMessage() {
@@ -123,9 +170,9 @@ void BoardSupportPackage::printStartupMessage() {
 }
 
 void onSystemTick(BoardSupportPackage&) {
-	QK_ISR_ENTRY();
+//	QK_ISR_ENTRY();
 	QP::QF::tick();
-	QK_ISR_EXIT();
+//	QK_ISR_EXIT();
 }
 
 void onDebugUartInterrupt(BoardSupportPackage& system) {
@@ -141,10 +188,11 @@ void onDebugUartInterrupt(BoardSupportPackage& system) {
 
 void onDebugTransmitComplete(BoardSupportPackage& system) {
 	QK_ISR_ENTRY();
-//	if (__HAL_DMA_GET_FLAG(system.debugUart.hdmatx, DMA_FLAG_TCIF1_5)) {
+	if (__HAL_DMA_GET_FLAG(system.debugUart.hdmatx, DMA_FLAG_TEIF0_4)) {
+		__HAL_DMA_CLEAR_FLAG(system.debugUart.hdmatx, DMA_FLAG_TEIF0_4);
 //		HAL_DMA_IRQHandler(system.debugUart.hdmatx);
 		DT::item.post_( Q_NEW(QP::QEvt, DT::TRANSMITION_COMPLETE_SIG), 0);
-//	}
+	}
 	QK_ISR_EXIT();
 }
 

@@ -7,7 +7,7 @@
    <attribute name="dischargedValue" type="const uint32_t" visibility="0x02" properties="0x00"/>
    <attribute name="currentValue" type="uint32_t" visibility="0x02" properties="0x00"/>
    <operation name="BatteryController" type="QMActive(Q_STATE_CAST(&amp;BatteryController::initial)), chargedValue(4250), dischargedValue(3520) " visibility="0x02" properties="0x00"/>
-   <operation name="~BatteryController" type="" visibility="0x00" properties="0x00">
+   <operation name="~BatteryController" type="" visibility="0x00" properties="0x04">
     <code>/* no! */</code>
    </operation>
    <operation name="getValue" type="uint32_t&amp;" visibility="0x00" properties="0x00">

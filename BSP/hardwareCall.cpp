@@ -18,11 +18,12 @@
 extern "C" {
 	void SysTick_Handler(void);
 	void UART8_IRQHandler(void);
+	void DMA1_Stream0_IRQHandler(void);
 	void DMA1_Stream1_IRQHandler(void);
 }
 
 void initLedGpio() {
-	/* PG13 - RX, PG14 - TX */
+	/* PG13 - Green, PG14 - Red  */
 	GPIO_InitTypeDef initializer;
 	initializer.Alternate = 0;
 	initializer.Mode = GPIO_MODE_OUTPUT_PP;
@@ -51,26 +52,42 @@ void initDebugGpio(void) {
 	initializer.Speed = GPIO_SPEED_LOW;
 	__HAL_RCC_GPIOE_CLK_ENABLE();
 	HAL_GPIO_Init(GPIOE, &initializer);
+	__HAL_RCC_UART8_CLK_ENABLE();
+	__HAL_RCC_DMA1_CLK_ENABLE();
 }
 
 void initWiFiGpio(void) {
 	/* PF6 - RX, PF7 - TX, UART7 */
+	GPIO_InitTypeDef initializer;
+	initializer.Alternate = GPIO_AF8_UART7;
+	initializer.Mode = GPIO_MODE_AF_PP;
+	initializer.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+	initializer.Pull = GPIO_PULLUP;
+	initializer.Speed = GPIO_SPEED_LOW;
+	__HAL_RCC_GPIOF_CLK_ENABLE();
+	HAL_GPIO_Init(GPIOF, &initializer);
+	__HAL_RCC_UART7_CLK_ENABLE();
+	__HAL_RCC_DMA1_CLK_ENABLE();
+}
+
+void initSteeringPWMGpio(void) {
 
 }
 
-HAL_StatusTypeDef initDebugIface(UART_HandleTypeDef &huart) {
-	__HAL_RCC_UART8_CLK_ENABLE();
-	HAL_UART_Init(&huart);
+HAL_StatusTypeDef initUartIface(UART_HandleTypeDef &huart) {
+	HAL_StatusTypeDef stat = HAL_UART_DeInit(&huart);
+	stat = HAL_UART_Init(&huart);
     __HAL_UART_ENABLE_IT(&huart, UART_IT_RXNE);
-
-	__HAL_RCC_DMA1_CLK_ENABLE();
-	HAL_DMA_Init(huart.hdmatx);
+    stat = HAL_DMA_Init(huart.hdmatx);
 	return HAL_OK;
 }
 
 void allowInterrupts(void) {
 	/* debug interrupts */
 	HAL_NVIC_EnableIRQ(UART8_IRQn);
+	HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+	/* wifi interrupts */
+	HAL_NVIC_EnableIRQ(UART7_IRQn);
 	HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 }
 
@@ -89,7 +106,7 @@ bool uartSendDMA(UART_HandleTypeDef *huart, const char *string, uint32_t size) {
 		return false;
 	}
 
-#if 0
+#if 1
 	HAL_StatusTypeDef stat = HAL_UART_Transmit_DMA(huart, (uint8_t*)string, static_cast<uint16_t>(size));
 #else
 	HAL_StatusTypeDef stat = HAL_UART_Transmit_IT(huart, (uint8_t*)string, static_cast<uint16_t>(size));
@@ -114,7 +131,10 @@ extern "C" {
 		onDebugUartInterrupt(BSP::system);
 	}
 
-	void DMA1_Stream1_IRQHandler(void) {
+	void DMA1_Stream0_IRQHandler(void) {
 		onDebugTransmitComplete(BSP::system);
+	}
+	void DMA1_Stream1_IRQHandler(void) {
+//		onWifiTransmitComplete(BSP::system);
 	}
 }

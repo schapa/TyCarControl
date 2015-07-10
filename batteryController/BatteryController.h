@@ -40,7 +40,7 @@ private:
     BatteryController();
 
 public:
-    ~BatteryController();
+    virtual ~BatteryController();
     uint32_t& getValue();
     uint32_t getPercentage();
     static BatteryController& getInstance();

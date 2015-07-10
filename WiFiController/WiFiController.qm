@@ -2,12 +2,68 @@
 <model version="3.2.2">
  <framework name="qpcpp"/>
  <package name="Controller" stereotype="0x00">
-  <class name="WiFiController">
-   <attribute name="attr1" type="" visibility="0x00" properties="0x00"/>
+  <class name="WiFiController" superclass="qpcpp::QMActive">
+   <operation name="WiFiController" type="QMActive(Q_STATE_CAST(&amp;WiFiController::initial))" visibility="0x02" properties="0x00"/>
+   <operation name="~WiFiController" type="" visibility="0x00" properties="0x04">
+    <code>//</code>
+   </operation>
+   <operation name="getInstance" type="WiFiController&amp;" visibility="0x00" properties="0x01">
+    <code>static WiFiController instance;
+return instance;</code>
+   </operation>
+   <statechart>
+    <initial target="../1">
+     <action>(void)e; //supress warning</action>
+     <initial_glyph conn="8,7,5,0,17,8">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="Startup">
+     <state name="Initialize">
+      <state_glyph node="17,22,25,19"/>
+     </state>
+     <state_glyph node="12,15,51,31"/>
+    </state>
+    <state_diagram size="137,114"/>
+   </statechart>
   </class>
   <directory name=".">
-   <file name="WiFiController.h"/>
-   <file name="WiFiController.cpp"/>
+   <file name="WiFiController.h">
+    <text>#ifndef WIFICONTROLLER_H
+#define WIFICONTROLLER_H
+
+#include &quot;qp_port.h&quot;
+
+namespace WiFi {
+
+enum BatterySignals {
+    DUMMY_SIG = QP::Q_USER_SIG,
+    MAX_PUB_SIG
+};
+
+$declare(Controller::WiFiController)
+
+extern WiFiController&amp; item;
+
+}
+
+#endif // WIFICONTROLLER_H</text>
+   </file>
+   <file name="WiFiController.cpp">
+    <text>#include &quot;qp_port.h&quot;
+#include &quot;WiFiController.h&quot;
+#include &lt;stdint.h&gt;
+#include &quot;BoardSupportPackage.h&quot;
+#include &quot;DebugTracer.h&quot;
+
+namespace WiFi {
+
+$define(Controller::WiFiController)
+
+WiFiController&amp; item = WiFiController::getInstance();
+
+}</text>
+   </file>
   </directory>
  </package>
 </model>

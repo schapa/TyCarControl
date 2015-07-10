@@ -139,6 +139,9 @@ void TraceChannelController::onReception(const char& character) {
 bool TraceChannelController::sendData(const char * buff) {
     return BSP::system.debugTraceAsync(buff) != 0;
 }
+void TraceChannelController::reconfigure() {
+    BSP::system.setDebugIFaceSpeed(getSpeed());
+}
 
 DebugTracer& item = DebugTracer::getInstance();
 
